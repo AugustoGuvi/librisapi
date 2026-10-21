@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
@@ -48,6 +50,8 @@ fun DetailScreen(
     book: Book,
     authorState: AuthorUiState,
     readingState: ReadingUiState,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onBack: () -> Unit,
     onWorkClick: (String) -> Unit
 ) {
@@ -63,7 +67,13 @@ fun DetailScreen(
                     Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Ink)
                 }
                 Spacer(Modifier.width(6.dp))
-                Text("Detalles del libro", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Detalles del libro", modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Quitar de favoritos" else "Guardar como favorito",
+                        tint = Rust)
+                }
             }
         }
         item {
@@ -100,12 +110,12 @@ fun DetailScreen(
             }
         }
         item {
-            SectionCard(heading = "Acerca de este libro", subtitle = "GOOGLE BOOKS") {
+            SectionCard(heading = "Acerca de este libro", subtitle = if (book.id.startsWith("openlibrary:")) "OPEN LIBRARY" else "GOOGLE BOOKS") {
                 val info = book.descriptionHtml?.let {
                     HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim()
                 }.orEmpty()
                 Text(
-                    info.ifBlank { "Google Books no proporciona una descripción para esta edición." },
+                    info.ifBlank { "El catálogo no proporciona una descripción para esta edición." },
                     style = MaterialTheme.typography.bodyMedium,
                     color = Ink,
                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
@@ -125,7 +135,7 @@ fun DetailScreen(
                     ) {
                         Icon(Icons.Default.OpenInNew, contentDescription = null, Modifier.size(17.dp))
                         Spacer(Modifier.width(7.dp))
-                        Text("Ver ficha en Google Books")
+                        Text(if (book.id.startsWith("openlibrary:")) "Ver ficha en Open Library" else "Ver ficha en Google Books")
                     }
                 }
             }
@@ -196,24 +206,9 @@ fun DetailScreen(
             SectionCard(heading = "Leer o descargar", subtitle = "GUTENDEX · PROJECT GUTENBERG") {
                 when {
                     readingState.loading -> LoadingPanel("Buscando una versión gratuita verificable…")
-                    readingState.edition == null -> {
-                        MessagePanel(readingState.message ?: "No hay una edición encontrada en Gutenberg.")
-                        Spacer(Modifier.height(10.dp))
-                        // Alternativa legible si el servidor rechaza el cliente Retrofit.
-                        OutlinedButton(
-                            onClick = {
-                                val search = Uri.encode(book.title.substringBefore(':').trim())
-                                context.openSafeUrl("https://www.gutenberg.org/ebooks/search/?query=$search")
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            border = BorderStroke(1.dp, Border),
-                            shape = RoundedCornerShape(13.dp)
-                        ) {
-                            Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(17.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Buscar en Project Gutenberg")
-                        }
-                    }
+                    readingState.edition == null -> MessagePanel(
+                        readingState.message ?: "No hay una edición encontrada en Gutenberg."
+                    )
                     else -> {
                         val edition = readingState.edition
                         Text(

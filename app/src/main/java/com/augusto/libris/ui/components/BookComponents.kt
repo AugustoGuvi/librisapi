@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -48,7 +50,7 @@ fun BookCover(url: String?, modifier: Modifier = Modifier) {
 private val ColorCover = Ink
 
 @Composable
-fun BookResultCard(book: Book, onClick: () -> Unit) {
+fun BookResultCard(book: Book, isFavorite: Boolean, onClick: () -> Unit, onFavoriteClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(22.dp),
@@ -86,7 +88,16 @@ fun BookResultCard(book: Book, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = "Abrir libro", tint = Rust)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(onClick = onFavoriteClick) {
+                    Icon(
+                        if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Quitar favorito" else "Guardar favorito",
+                        tint = Rust
+                    )
+                }
+                Icon(Icons.Default.ChevronRight, contentDescription = "Abrir libro", tint = Rust)
+            }
         }
     }
 }

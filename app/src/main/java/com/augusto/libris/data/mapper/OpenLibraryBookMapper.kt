@@ -3,11 +3,10 @@ package com.augusto.libris.data.mapper
 import com.augusto.libris.data.dto.OpenLibraryBookDto
 import com.augusto.libris.domain.model.Book
 
-/** Mapper DTO -> Book: permite usar la misma pantalla de detalle al fallar Google Books. */
+/** Una obra de Open Library se transforma al mismo modelo Book de la app. */
 fun OpenLibraryBookDto.toBook(): Book? {
     val titleValue = title?.takeIf { it.isNotBlank() } ?: return null
     val keyValue = key?.takeIf { Regex("^/works/OL[0-9]+W$").matches(it) } ?: return null
-
     return Book(
         id = "openlibrary:$keyValue",
         title = titleValue,

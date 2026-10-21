@@ -2,9 +2,9 @@ package com.augusto.libris.data.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** DTOs de búsqueda de obras: endpoint search.json (no confundir con la búsqueda de autores). */
+/** Esquema de búsqueda de libros de Open Library (diferente del de autores). */
 data class OpenLibraryBooksResponseDto(
-    val numFound: Int? = null,
+    @SerializedName("numFound") val numFound: Int? = null,
     val docs: List<OpenLibraryBookDto>? = null
 )
 

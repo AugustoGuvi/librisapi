@@ -12,6 +12,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,7 +38,11 @@ private val suggestions = listOf("Don Quijote", "Orgullo y prejuicio", "Drácula
 fun SearchScreen(
     state: BooksUiState,
     onSearch: (String) -> Unit,
-    onBookClick: (Book) -> Unit
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onBookClick: (Book) -> Unit,
+    onFavoriteClick: (Book) -> Unit,
+    onViewFavorites: () -> Unit
 ) {
     var input by rememberSaveable { mutableStateOf("Don Quijote") }
     LaunchedEffect(state.currentQuery) {
@@ -60,10 +66,15 @@ fun SearchScreen(
                     )
                 }
                 Spacer(Modifier.width(11.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text("LIBRIS", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
                     Text("TU BIBLIOTECA DIGITAL", style = MaterialTheme.typography.labelSmall, color = SecondaryInk)
                 }
+                IconButton(onClick = onViewFavorites) {
+                    Icon(Icons.Default.Favorite, contentDescription = "Ver favoritos", tint = Rust)
+                }
+                Text("${state.favoriteIds.size}", style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold, color = Rust)
             }
         }
         item {
@@ -155,44 +166,80 @@ fun SearchScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                if (!state.isLoading && state.error == null && state.currentQuery.isNotBlank()) {
+                if (state.currentQuery.isNotBlank()) {
                     Text("${state.books.size} mostrados", style = MaterialTheme.typography.labelMedium, color = SecondaryInk)
+                }
+                IconButton(onClick = onRefresh, enabled = !state.isLoading) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar resultados", tint = Rust)
                 }
             }
         }
         if (state.notice != null) {
             item {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFFFF1E5),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        state.notice,
-                        modifier = Modifier.padding(13.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Ink
-                    )
+                Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFFFF1E5)) {
+                    Text(state.notice, modifier = Modifier.fillMaxWidth().padding(13.dp),
+                        style = MaterialTheme.typography.bodySmall, color = Ink)
                 }
             }
         }
-        if (!state.isLoading && state.error == null && state.source != null) {
-            item {
-                Text(
-                    if (state.source == CatalogSource.GOOGLE_BOOKS)
-                        "Fuente de búsqueda: Google Books"
-                    else "Fuente de búsqueda: Open Library (respaldo)",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SecondaryInk
-                )
+        if (state.source != null) {
+            item { Text(
+                if (state.source == CatalogSource.GOOGLE_BOOKS) "Fuente del catálogo: Google Books"
+                else "Fuente del catálogo: Open Library (respaldo)",
+                style = MaterialTheme.typography.labelSmall, color = SecondaryInk)
             }
         }
-        when {
-            state.isLoading -> item { LoadingPanel("Buscando libros reales en Google Books…") }
-            state.error != null -> item { MessagePanel(state.error) }
-            state.books.isEmpty() -> item { MessagePanel("No encontramos resultados. Prueba con otro título o autor.") }
-            else -> items(state.books, key = { it.id }) { book ->
-                BookResultCard(book) { onBookClick(book) }
+        if (state.hasSavedCopy) {
+            item { Text("Copia local disponible · puedes consultar estos libros sin internet",
+                style = MaterialTheme.typography.labelSmall, color = SecondaryInk) }
+        }
+        if (state.isLoading) {
+            item { LoadingPanel(if (state.books.isNotEmpty()) "Actualizando copia local…"
+                else "Consultando Google Books…") }
+        }
+        if (state.error != null) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MessagePanel(state.error)
+                    TextButton(onClick = onRefresh) { Text("Reintentar") }
+                }
+            }
+        }
+        if (!state.isLoading && state.error == null && state.books.isEmpty()) {
+            item { MessagePanel("No encontramos resultados. Prueba con otro título o autor.") }
+        }
+        items(state.books, key = { it.id }) { book ->
+            BookResultCard(
+                book = book,
+                isFavorite = book.id in state.favoriteIds,
+                onClick = { onBookClick(book) },
+                onFavoriteClick = { onFavoriteClick(book) }
+            )
+        }
+        if (state.books.isNotEmpty() && state.hasMore) {
+            item {
+                Button(
+                    onClick = onLoadMore,
+                    enabled = !state.isLoadingMore && !state.isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Ink)
+                ) {
+                    if (state.isLoadingMore) {
+                        CircularProgressIndicator(Modifier.size(17.dp), strokeWidth = 2.dp,
+                            color = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (state.isLoadingMore) "Cargando más…" else "Cargar más libros")
+                }
+            }
+        }
+        if (state.loadMoreError != null) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    MessagePanel(state.loadMoreError)
+                    TextButton(onClick = onLoadMore) { Text("Reintentar cargar más") }
+                }
             }
         }
         item {
