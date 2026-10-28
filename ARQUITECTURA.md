@@ -68,5 +68,3 @@ conservador. Encontrar una obra de dominio público no garantiza que sea la mism
 - `ui/view/` → pantallas Jetpack Compose.
 - `ui/components/` → componentes reutilizables.
 - `di/` → contenedor de dependencias; evita configurar Hilt para la materia.
-
-**Tolerancia a fallos:** Google Books es la fuente prioritaria del listado; Open Library `search.json` funciona como respaldo si Google Books no responde. En ambos casos la selección de un libro alimenta `AuthorViewModel` (Open Library) y `ReadingViewModel` (Gutendex).

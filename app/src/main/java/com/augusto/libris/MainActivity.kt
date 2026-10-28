@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.augusto.libris.di.AppContainer
 import com.augusto.libris.ui.view.LibraryApp
+import com.augusto.libris.ui.auth.FirebaseGate
 import com.augusto.libris.ui.theme.LibrisTheme
 
 class LibraryApplication : Application(), ImageLoaderFactory {
@@ -24,7 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             LibrisTheme {
-                LibraryApp()
+                FirebaseGate { LibraryApp() }
             }
         }
     }
